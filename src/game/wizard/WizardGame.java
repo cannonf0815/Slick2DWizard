@@ -1,5 +1,5 @@
 /*  
-* Wizard Geme Tutorial
+* Wizard Game Tutorial
 * ====================
 * see README.md for details.
 * fixed collision detection
@@ -26,20 +26,22 @@ public class WizardGame extends BasicGame
 {
     private TiledMap grassMap;
     private Animation sprite, up, down, left, right;
-    // initial positon
-    private float x = 160f + 32f, y = 160f + 32f;
+    // initial position
+    private float x = 1*32f, y = 4*32f;
     
     // The collision map is indicating which tiles block movement - generated based
     // on tile properties
-    
     private boolean[][] blocked;
-    // size of tiles is 32x32
+    
+    // size of tiles and sprite is 32x32
     private static final int SIZE = 32;
+    private int myDelta;        // The amount of time in milliseconds passed since last update  
     
     public WizardGame()
     {
         super("Wizard game");
     }
+    
     
     public static void main(String[] arguments)
     {
@@ -47,6 +49,7 @@ public class WizardGame extends BasicGame
         {
             AppGameContainer app = new AppGameContainer(new WizardGame());
             app.setDisplayMode(640, 640, false);
+            app.setShowFPS(false);
             //app.setTargetFrameRate(160);
             app.start();
         }
@@ -56,13 +59,14 @@ public class WizardGame extends BasicGame
         }
     }
     
+    
     @Override
     public void init(GameContainer container) throws SlickException
     {
         // Map, created with Tiled
         // only gzip/zlib base64 supported
-        grassMap = new TiledMap("data/grassmap.tmx");
-		
+        grassMap = new TiledMap("data/grassmap20x20_01.tmx");
+        
         // SMALL Wizard was the base for the stuff above!
         // Create arrays of Image class
         // public Image(java.lang.String ref)
@@ -73,7 +77,7 @@ public class WizardGame extends BasicGame
         Image [] movementLeft  = {new Image("data/wmg1_lf1.png"), new Image("data/wmg1_lf2.png")};
         Image [] movementRight = {new Image("data/wmg1_rt1.png"), new Image("data/wmg1_rt2.png")};
         
-		// The duration to show each of the 2 frames        
+        // The duration in ms to show each of the 2 frames        
         int[] duration = { 300, 300 };
         
         // public Animation(Image[] frames, int[] duration, boolean autoUpdate)
@@ -89,42 +93,50 @@ public class WizardGame extends BasicGame
         right = new Animation(movementRight, duration, false);
         // Original orientation of the sprite. It will look right.
         sprite = right;
-		
-        // build a collision map based on tile properties in the Tile map
+        
+        // build a collision map based on tile properties in the Tiled map
         System.out.println("Size of grassMap (x * y): " + grassMap.getWidth() + " x " + grassMap.getHeight());
         blocked = new boolean[grassMap.getWidth()][grassMap.getHeight()];
         for (int xAxis = 0; xAxis < grassMap.getWidth(); xAxis++) {
             for (int yAxis = 0; yAxis < grassMap.getHeight(); yAxis++) {
                 int tileID = grassMap.getTileId(xAxis, yAxis, 0);
                 String value = grassMap.getTileProperty(tileID, "blocked", "false");
-                if ("true".equals(value)) {
+                if (value.equals("true")) {
                     System.out.println("Found blocked Tile at (x , y) : " + xAxis + " , " + yAxis);
                     blocked[xAxis][yAxis] = true;
                 }
             }
         }
     }
-
+    
+    
+    // Update the game logic here.
+    // No rendering should take place in this method though it won't do any harm. 
+    // delta - The amount of time in milliseconds passed since last update
+    // Reduced SIZE by one pixel for collision detection!
     @Override
-    public void update(GameContainer container, int delta) throws SlickException {
+    public void update(GameContainer container, int delta) throws SlickException
+    {
         Input input = container.getInput();
         
-        // delta is 1
+        myDelta = delta;
+        // The lower the delta the slower the sprite will animate.
+		
+        // delta is normally 1 ms ...
         
         // x,y = 0,0 is top left corner!
         // move up, decrease y
         if (input.isKeyDown(Input.KEY_UP)) {
             sprite = up;
-            if (!isBlocked(x, y - delta * 0.1f)&&!isBlocked(x + SIZE, y - delta * 0.1f)) {
+            if (!isBlocked(x, y - delta * 0.1f) && !isBlocked(x + (SIZE - 1), y - delta * 0.1f)) {
                 sprite.update(delta);
-                // The lower the delta the slower the sprite will animate.
                 y -= delta * 0.1f;
             }
         }
         // move down, increase y
         else if (input.isKeyDown(Input.KEY_DOWN)) {
             sprite = down;
-            if (!isBlocked(x, y + SIZE + delta * 0.1f)&&!isBlocked(x + SIZE, y + SIZE + delta * 0.1f)) {
+            if (!isBlocked(x, y + (SIZE - 1) + delta * 0.1f) && !isBlocked(x + (SIZE - 1) , y + (SIZE - 1)  + delta * 0.1f)) {
                 sprite.update(delta);
                 y += delta * 0.1f;
             }
@@ -132,7 +144,7 @@ public class WizardGame extends BasicGame
         // move left, decrease x
         else if (input.isKeyDown(Input.KEY_LEFT)) {
             sprite = left;
-            if (!isBlocked(x - delta * 0.1f, y)&&!isBlocked(x - delta * 0.1f, y + SIZE)) {
+            if (!isBlocked(x - delta * 0.1f, y) && !isBlocked(x - delta * 0.1f, y + (SIZE - 1))) {
                 sprite.update(delta);
                 x -= delta * 0.1f;
             }
@@ -140,36 +152,55 @@ public class WizardGame extends BasicGame
         // move right, increase x
         else if (input.isKeyDown(Input.KEY_RIGHT)) {
             sprite = right;
-            if (!isBlocked(x + SIZE + delta * 0.1f, y)&&!isBlocked(x + SIZE + delta * 0.1f, y + SIZE)) {
+            if (!isBlocked(x + (SIZE - 1) + delta * 0.1f, y) && !isBlocked(x + (SIZE - 1) + delta * 0.1f, y + (SIZE - 1))) {
                 sprite.update(delta);
                 x += delta * 0.1f;
             }
         }
     }
-
-    public void render(GameContainer container, Graphics g) throws SlickException {
-        grassMap.render(5*32, 5*32);
+    
+    
+    public void render(GameContainer container, Graphics g) throws SlickException
+    {
+        grassMap.render(0, 0);
         sprite.draw((int) x, (int) y);
+        int xBlock = (int) (x / SIZE);
+        int yBlock = (int) (y / SIZE);
         
-        // Display the location of the wizard
+        // Display the location of the wizard and other debug infos
         // public void drawString(java.lang.String str, float x, float y)
         // str - The string to draw
         // y - The y coordinate to draw the string at
         // x - The x coordinate to draw the string at
-        g.drawString("X: " + (int) x + " Y: " + (int) y, 100f, 10f);
+        g.drawString("X: " + x + " Y: " + y, 10f, 10f);
+        g.drawString("Delta: " + myDelta, 10f, 55f);        // container.getDelta() is protected!
+        g.drawString("xBlock: " + xBlock + ", yBlock: " + yBlock, 10f, 25f);
+        g.drawString("blocked= " + blocked[xBlock][yBlock], 10f, 40f);
     }
-
-    private boolean isBlocked(float x, float y) {
+    
+    
+    // is called during update
+    private boolean isBlocked(float x, float y)
+    {
         int xBlock = (int) (x / SIZE);
         int yBlock = (int) (y / SIZE);
-        if(xBlock>=(5 + grassMap.getWidth())||yBlock>=(5 + grassMap.getHeight())){
+        
+        if(xBlock >= (grassMap.getWidth()) || yBlock >= (grassMap.getHeight())){
+        	//System.out.println("+BorderBLOCKED @ xBlock: " + xBlock + ", yBlock: " + yBlock + "| X: " + x + " Y: " + y);
             return true;
         }
-        if(xBlock<=4||yBlock<=4){
-            return true;
+        
+        // problem with casting small negative values to int...
+        if(xBlock < 0 || yBlock < 0 || x < 0 || y < 0){
+        	//System.out.println("-BorderBLOCKED @ xBlock: " + xBlock + ", yBlock: " + yBlock + "| X: " + x + " Y: " + y);
+        	return true;
         }
-
-        return blocked[xBlock-5][yBlock-5];
-        // return false;
+        
+        if (blocked[xBlock][yBlock]) {
+        	//System.out.println("BLOCKED @ xBlock: " + xBlock + ", yBlock: " + yBlock + "| X: " + x + " Y: " + y);
+        	return true;
+        }
+        
+        return false;
     }
 }
