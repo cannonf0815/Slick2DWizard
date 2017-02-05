@@ -1,0 +1,16 @@
+Wizard sprites are all 32x32
+Tiles are also 32x32
+
+Starting Map is 10x10 Tiles => 320 x 320
+
+Window is 640x640 (20 Tiles x 20 Tiles)
+Map is drawn in center with an offset of 160 = 5 * 32 (5 Tiles)
+
+x,y = 0,0 is top left corner
+x,y is real pixel sprite cordinates running from
+160.09 , 160.09
+447.91 , 447.91
+max:
+480,00 , 480,00
+
+spritepos is top left corner
